@@ -21,7 +21,7 @@ var $,
 // Variables
 var $excel_btn,
     addInterval,
-    columnHeadings = ['List', 'Title', 'Description', 'Points', 'Due', 'Members', 'Labels', 'Card #'];
+    columnHeadings = ['List', 'Title', 'Subtasks', 'Points', 'Due', 'Members', 'Labels', 'Card #'];
 
 window.URL = window.webkitURL || window.URL;
 
@@ -29,9 +29,12 @@ function createExcelExport() {
     "use strict";
     // RegEx to find the points for users of TrelloScrum
     var pointReg = /[\(](\x3f|\d*\.?\d+)([\)])\s?/m;
+	var estimateReg = /[\(](\x3f|\d*\.?\d+)([\)])\s?/m;
 
     $.getJSON($('a.js-export-json').attr('href'), function (data) {
-            
+        
+		console.log(data);
+		
         var file = {
             worksheets: [[], []], // worksheets has one empty worksheet (array)
             creator: 'TrelloExport',
@@ -41,14 +44,14 @@ function createExcelExport() {
             activeWorksheet: 0
         },
             
-            // Setup the active list and cart worksheet
-            w = file.worksheets[0],
-            wArchived = file.worksheets[1],
-            buffer,
-            i,
-            ia,
-            blob,
-            board_title;
+		// Setup the active list and cart worksheet
+		w = file.worksheets[0],
+		wArchived = file.worksheets[1],
+		buffer,
+		i,
+		ia,
+		blob,
+		board_title;
         
         w.name = data.name.substring(0, 22);  // Over 22 chars causes Excel error, don't know why
         w.data = [];
@@ -75,7 +78,8 @@ function createExcelExport() {
             // Iterate through each card and transform data as needed
             $.each(data.cards, function (i, card) {
                 if (card.idList === list_id) {
-                    var title = card.name,
+                    var card_id = card.id,
+						title = card.name,
                         parsed = title.match(pointReg),
                         points = parsed ? parsed[1] : '',
                         due = card.due || '',
@@ -117,28 +121,35 @@ function createExcelExport() {
                     if (due !== '') {
                         due = d;
                     }
-                    
-                    rowData = [
-                        listName,
-                        title,
-                        card.desc,
-                        points,
-                        due,
-                        memberInitials.toString(),
-                        labels.toString(),
-                        card.idShort
-                    ];
-                
-                    // Writes all closed items to the Archived tab
-                    // Note: Trello allows open cards on closed lists
-                    if (list.closed || card.closed) {
-                        rArch = wArchived.data.push([]) - 1;
-                        wArchived.data[rArch] = rowData;
-                                                                                
-                    } else {
-                        r = w.data.push([]) - 1;
-                        w.data[r] = rowData;
-                    }
+					
+					$.each(data.checklists, function (i, checklist) {
+						if (checklist.idCard === card_id) { 
+
+							$.each(checklist.checkItems, function (i, checkitem) {
+								rowData = [
+									listName,
+									title,
+									checkitem.name,
+									points,
+									due,
+									memberInitials.toString(),
+									labels.toString(),
+									card.idShort
+								];
+							
+								// Writes all closed items to the Archived tab
+								// Note: Trello allows open cards on closed lists
+								if (list.closed || card.closed) {
+									rArch = wArchived.data.push([]) - 1;
+									wArchived.data[rArch] = rowData;
+																							
+								} else {
+									r = w.data.push([]) - 1;
+									w.data[r] = rowData;
+								}
+							});
+						}
+					});
                 }
             });
         });
@@ -171,7 +182,7 @@ function createExcelExport() {
 // Add a Export Excel button to the DOM and trigger export if clicked
 function addExportLink() {
     "use strict";
-    //alert('add');
+    console.log('add');
    
     var $js_btn = $('a.js-export-json'); // Export JSON link
     
@@ -205,6 +216,6 @@ $(function () {
     // Look for clicks on the .js-share class, which is
     // the "Share, Print, Export..." link on the board header option list
     $(document).on('mouseup', ".js-share", function () {
-        addInterval = setInterval(addExportLink, 500);
+        addInterval = setInterval(addExportLink, 50);
     });
 });
