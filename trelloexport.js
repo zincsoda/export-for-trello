@@ -19,10 +19,11 @@ var $,
 
 
 // Variables
+//columnHeadings = ['List', 'Title', 'Subtasks', 'Points', 'Due', 'Members', 'Labels', 'Card #'];
 var $excel_btn,
     addInterval,
-    columnHeadings = ['List', 'Title', 'Subtasks', 'Points', 'Due', 'Members', 'Labels', 'Card #'];
-
+	columnHeadings = ['Title', 'Subtasks','Members', 'Best', 'Expected', 'Worst','Due'];
+	
 window.URL = window.webkitURL || window.URL;
 
 function createExcelExport() {
@@ -31,8 +32,6 @@ function createExcelExport() {
     var pointReg = /[\(](\x3f|\d*\.?\d+)([\)])\s?/m;
 
     $.getJSON($('a.js-export-json').attr('href'), function (data) {
-        
-		console.log(data);
 		
         var file = {
             worksheets: [[], []], // worksheets has one empty worksheet (array)
@@ -125,32 +124,55 @@ function createExcelExport() {
 						if (checklist.idCard === card_id) { 
 
 							$.each(checklist.checkItems, function (i, checkitem) {
-							
+								
+								var time, best_expected_worst, best, expected, worst;
+								
+								time = checkitem.name.match(/t:(.*)/);
+								best_expected_worst = time ? time[1].match(/(.*),(.*),(.*)/) : null;
+								
+								if (best_expected_worst != null) {
+									best = best_expected_worst ? best_expected_worst[1] : '0'
+									expected = best_expected_worst ? best_expected_worst[2] : '0'
+									worst = best_expected_worst ? best_expected_worst[3] : '0'
+								} else {
+									best = time ? time[1] : '0'
+									expected = time ? time[1] : '0'
+									worst = time ? time[1] : '0'
+								};
+								
+								// Strip out hours from times
+								best = best.replace('h','');
+								worst = worst.replace('h','');
+								expected = expected.replace('h','');
+								
+								// If there are minutes, divide by 60
+								var best_float,expected_float,worst_float;
+								if (best.indexOf('m') > -1) {
+									best = best.replace('m',''); 
+									best_float = parseFloat(best)/60; 
+									best = best_float.toFixed(2);
+								}
+								if (expected.indexOf('m') > -1) {
+									expected = expected.replace('m',''); 
+									expected_float = parseFloat(expected)/60; 
+									expected = expected_float.toFixed(2);
+								}
+								
+								if (worst.indexOf('m') > -1) {
+									worst = worst.replace('m',''); 
+									worst_float = parseFloat(worst)/60; 
+									worst = worst_float.toFixed(2);
+								}
 							
 								rowData = [
-									listName,
 									title,
 									checkitem.name,
-									points,
-									due,
 									memberInitials.toString(),
-									labels.toString(),
-									card.idShort
-								];
-							
-							time = string.match(/t:(.*)/)[1]
- 
-							/*
-							best_expected_worst = time.match(/(.*),(.*),(.*)/)
-							if (best_expected_worst != null) {
-								best = best_expected_worst[0]
-								expected = best_expected_worst[1]
-								worst = best_expected_worst[2]
-							} else {
-								best = time
-								expected = time
-								worst = time
-							}*?
+									best,
+									expected,
+									worst,
+									due
+									];
 							
 								// Writes all closed items to the Archived tab
 								// Note: Trello allows open cards on closed lists
@@ -197,7 +219,7 @@ function createExcelExport() {
 // Add a Export Excel button to the DOM and trigger export if clicked
 function addExportLink() {
     "use strict";
-    console.log('add');
+    //console.log('add');
    
     var $js_btn = $('a.js-export-json'); // Export JSON link
     
