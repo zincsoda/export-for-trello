@@ -29,7 +29,6 @@ function createExcelExport() {
     "use strict";
     // RegEx to find the points for users of TrelloScrum
     var pointReg = /[\(](\x3f|\d*\.?\d+)([\)])\s?/m;
-	var estimateReg = /[\(](\x3f|\d*\.?\d+)([\)])\s?/m;
 
     $.getJSON($('a.js-export-json').attr('href'), function (data) {
         
@@ -126,6 +125,8 @@ function createExcelExport() {
 						if (checklist.idCard === card_id) { 
 
 							$.each(checklist.checkItems, function (i, checkitem) {
+							
+							
 								rowData = [
 									listName,
 									title,
@@ -136,6 +137,20 @@ function createExcelExport() {
 									labels.toString(),
 									card.idShort
 								];
+							
+							time = string.match(/t:(.*)/)[1]
+ 
+							/*
+							best_expected_worst = time.match(/(.*),(.*),(.*)/)
+							if (best_expected_worst != null) {
+								best = best_expected_worst[0]
+								expected = best_expected_worst[1]
+								worst = best_expected_worst[2]
+							} else {
+								best = time
+								expected = time
+								worst = time
+							}*?
 							
 								// Writes all closed items to the Archived tab
 								// Note: Trello allows open cards on closed lists
